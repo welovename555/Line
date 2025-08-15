@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LINE Add‑Friend Helper</title>
+  <meta name="description" content="หน้าเว็บสำหรับช่วยกดเพิ่มเพื่อนใน LINE ทีละคนอย่างรวดเร็ว บนมือถือ" />
+  <meta name="theme-color" content="#111111" />
+  <!-- TODO: แก้ OG/SEO ให้เหมาะกับเพจของคุณ -->
+  <meta property="og:title" content="LINE Add‑Friend Helper" />
+  <meta property="og:description" content="เตรียมปุ่ม Add Friend ทีละคน + แชร์ลิงก์รายชื่อได้" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="" />
+  <meta property="og:image" content="" />
+
+  <link rel="preconnect" href="https://api.qrserver.com" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="appbar">
+    <h1>LINE Add‑Friend Helper</h1>
+    <button id="toggleEditor" class="btn secondary" aria-expanded="false">Editor</button>
+  </header>
+
+  <main id="main" class="container">
+    <!-- ====== MODE: ADD FRIEND LIST ====== -->
+    <section id="listView" hidden>
+      <div class="intro">
+        <p>แตะปุ่มเพื่อเพิ่มเพื่อนใน LINE ทีละคน — รองรับทั้ง <b>เปิดในแอป</b> และ <b>ผ่านเว็บ</b>. ระบบจะจำความคืบหน้าให้อัตโนมัติ</p>
+      </div>
+
+      <div id="progress" class="progress" role="status" aria-live="polite"></div>
+
+      <ul id="linkList" class="link-list" aria-label="รายชื่อเพื่อน"></ul>
+
+      <div class="controls sticky">
+        <button id="prevBtn" class="btn" aria-label="ก่อนหน้า">◀︎ ก่อนหน้า</button>
+        <button id="nextBtn" class="btn primary" aria-label="ถัดไป">ถัดไป ▶︎</button>
+      </div>
+    </section>
+
+    <!-- ====== MODE: EDITOR / SHARE BUILDER ====== -->
+    <section id="editorView">
+      <h2>Editor — เตรียมรายชื่อ & สร้างลิงก์แชร์</h2>
+
+      <div class="card">
+        <label class="label">โหมดรายการ:</label>
+        <div class="seg">
+          <label><input type="radio" name="mode" value="oa" checked> OA IDs (@ไม่ต้องใส่ก็ได้)</label>
+          <label><input type="radio" name="mode" value="links"> ลิงก์เต็ม (เช่น line:// หรือ https://)</label>
+        </div>
+
+        <label class="label" for="itemsInput">รายการ (บรรทัดละ 1 รายการ)</label>
+        <textarea id="itemsInput" rows="8" placeholder="ตัวอย่าง OA IDs:\nline_thailand\n@yourshop\n...\nหรือโหมดลิงก์:\nhttps://line.me/R/ti/p/@yourshop\nline://ti/p/@anotherid"></textarea>
+
+        <details class="adv">
+          <summary>ตั้งค่าขั้นสูง (ไม่บังคับ)</summary>
+          <label class="label" for="titleInput">ชื่อหน้า (title)</label>
+          <input id="titleInput" type="text" placeholder="เช่น: โปรเจกต์เพื่อน 10 คน" />
+          <label class="label" for="themeInput">สีหลัก (hex)</label>
+          <input id="themeInput" type="text" placeholder="#16a34a" />
+        </details>
+
+        <div class="row">
+          <button id="buildLinkBtn" class="btn primary">สร้างลิงก์แชร์</button>
+          <button id="openListBtn" class="btn">เปิดเพื่อทดสอบ</button>
+        </div>
+        <p id="shareResult" class="muted"></p>
+      </div>
+
+      <div class="card hint">
+        <h3>คำแนะนำด่วน</h3>
+        <ul>
+          <li><b>OA IDs</b>: เราจะสร้างลิงก์อัตโนมัติเป็น <code>line://ti/p/@id</code> (เปิดแอป) และ <code>https://line.me/R/ti/p/@id</code> (ผ่านเว็บ)</li>
+          <li><b>บัญชีส่วนตัว</b>: ไม่มีลิงก์ Add Friend ตรง อาจใช้ลิงก์แชต/กลุ่ม/QR เองได้ในโหมดลิงก์</li>
+          <li>ปุ่ม “ถัดไป” จะไล่เปิดทีละรายการ และจำตำแหน่งไว้ในเครื่อง (ลบได้ใน Settings ของเบราว์เซอร์)</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <button id="sharePageBtn" class="btn secondary">แชร์หน้านี้</button>
+    <button id="copyPageLinkBtn" class="btn secondary">คัดลอกลิงก์หน้านี้</button>
+  </footer>
+
+  <template id="itemTmpl">
+    <li class="item">
+      <div class="info">
+        <div class="name"></div>
+        <div class="qr-wrap">
+          <!-- QR จะโหลดแบบ lazy เฉพาะตอนกดแสดง -->
+          <img class="qr" alt="QR" loading="lazy" hidden>
+        </div>
+      </div>
+      <div class="actions">
+        <a class="btn open-app" target="_blank" rel="noopener">เปิดในแอป</a>
+        <a class="btn open-web" target="_blank" rel="noopener">ผ่านเว็บ</a>
+        <button class="btn copy" data-copy="">คัดลอกลิงก์</button>
+        <button class="btn togglqr">QR</button>
+      </div>
+    </li>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>
